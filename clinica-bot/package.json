@@ -1,0 +1,19 @@
+{
+  "name": "clinica-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "ngrok": "^5.0.0-beta.2",
+    "openai": "^6.17.0",
+    "twilio": "^5.12.0"
+  }
+}

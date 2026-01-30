@@ -1,0 +1,14 @@
+{
+  "name": "Clínica Sorriso",
+  "address": "Rua X, 123 - Curitiba",
+  "hours": "Seg-Sex 08:00-18:00 | Sáb 08:00-12:00",
+  "services": [
+    { "name": "Avaliação", "price": "R$80", "duration": "20 min" },
+    { "name": "Limpeza", "price": "a partir de R$150", "duration": "40 min" },
+    { "name": "Clareamento", "price": "a partir de R$900", "duration": "2 sessões" }
+  ],
+  "policies": [
+    "Cancelamentos com 24h de antecedência.",
+    "Aceitamos Pix e cartão."
+  ]
+}
