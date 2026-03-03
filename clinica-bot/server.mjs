@@ -241,9 +241,9 @@ app.post("/twilio", async (req, res) => {
   // ✅ nunca mais quebra
   const payload = req.body || {};
 
-  // logs úteis
+  // logs básicos (evita exposição de payload sensível em produção)
   console.log("CONTENT-TYPE:", req.headers["content-type"]);
-  console.log("BODY:", payload);
+  console.log("TWILIO FROM:", payload.From || "unknown");
 
   const from = payload.From || "unknown";
   const body = String(payload.Body || "").trim();
