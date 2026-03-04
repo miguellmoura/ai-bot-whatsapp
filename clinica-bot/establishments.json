@@ -1,0 +1,33 @@
+[
+  {
+    "id": "clinica-sorriso",
+    "name": "Clínica Sorriso",
+    "address": "Rua X, 123 - Curitiba",
+    "hours": "Seg-Sex 08:00-18:00 | Sáb 08:00-12:00",
+    "twilio_number": "whatsapp:+14155238886",
+    "services": [
+      { "name": "Avaliação", "price": "R$80", "duration": "20 min" },
+      { "name": "Limpeza", "price": "a partir de R$150", "duration": "40 min" },
+      { "name": "Clareamento", "price": "a partir de R$900", "duration": "2 sessões" }
+    ],
+    "policies": [
+      "Cancelamentos com 24h de antecedência.",
+      "Aceitamos Pix e cartão."
+    ]
+  },
+  {
+    "id": "studio-derma",
+    "name": "Studio Derma",
+    "address": "Av. Central, 500 - São Paulo",
+    "hours": "Seg-Sáb 09:00-20:00",
+    "twilio_number": "whatsapp:+14155230000",
+    "services": [
+      { "name": "Limpeza de pele", "price": "a partir de R$190", "duration": "60 min" },
+      { "name": "Peeling", "price": "a partir de R$280", "duration": "45 min" }
+    ],
+    "policies": [
+      "Reagendamento com 12h de antecedência.",
+      "Aceitamos Pix, cartão e boleto."
+    ]
+  }
+]

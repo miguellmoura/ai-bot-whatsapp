@@ -1,7 +1,6 @@
 import "dotenv/config";
 import express from "express";
 import OpenAI from "openai";
-import fs from "fs";
 import twilio from "twilio";
 import {
   askClinicBot,
@@ -9,6 +8,10 @@ import {
   enforceFlow,
   parseYesNo,
 } from "./src/core/bot-core.mjs";
+import {
+  findEstablishment,
+  loadEstablishments,
+} from "./src/core/establishments.mjs";
 
 const app = express();
 
@@ -18,9 +21,7 @@ app.use(express.json());
 if (!process.env.OPENAI_API_KEY)
   throw new Error("OPENAI_API_KEY não encontrada.");
 
-const clinic = JSON.parse(
-  fs.readFileSync(new URL("./clinica.json", import.meta.url), "utf8"),
-);
+const { establishments, source } = loadEstablishments();
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -34,9 +35,9 @@ function newSession() {
   };
 }
 
-function getSession(from) {
-  if (!sessions.has(from)) sessions.set(from, newSession());
-  return sessions.get(from);
+function getSession(sessionKey) {
+  if (!sessions.has(sessionKey)) sessions.set(sessionKey, newSession());
+  return sessions.get(sessionKey);
 }
 
 function resetSession(session) {
@@ -65,22 +66,35 @@ function isValidTwilioRequest(req) {
   );
 }
 
-app.get("/", (req, res) => res.status(200).send("ok"));
+app.get("/", (req, res) =>
+  res.status(200).json({ ok: true, establishments: establishments.length, source }),
+);
 
-app.post("/twilio", async (req, res) => {
+app.post(["/twilio", "/twilio/:establishmentId"], async (req, res) => {
   const payload = req.body || {};
-
-  console.log("CONTENT-TYPE:", req.headers["content-type"]);
-  console.log("TWILIO FROM:", payload.From || "unknown");
 
   if (shouldValidateTwilioSignature() && !isValidTwilioRequest(req)) {
     return res.status(403).type("text/plain").send("invalid twilio signature");
   }
 
-  const from = payload.From || "unknown";
-  const body = String(payload.Body || "").trim();
+  const establishment = findEstablishment({
+    establishments,
+    establishmentId: req.params.establishmentId,
+    twilioTo: payload.To,
+  });
 
   const twiml = new twilio.twiml.MessagingResponse();
+  if (!establishment) {
+    twiml.message(
+      "Não consegui identificar o estabelecimento. Verifique o número Twilio ou rota do webhook.",
+    );
+    return res.type("text/xml").send(twiml.toString());
+  }
+
+  console.log("ESTABLISHMENT:", establishment.id, "FROM:", payload.From || "unknown");
+
+  const from = payload.From || "unknown";
+  const body = String(payload.Body || "").trim();
 
   if (from === "unknown" && !body) {
     twiml.message(
@@ -89,7 +103,8 @@ app.post("/twilio", async (req, res) => {
     return res.type("text/xml").send(twiml.toString());
   }
 
-  const session = getSession(from);
+  const sessionKey = `${establishment.id}:${from}`;
+  const session = getSession(sessionKey);
 
   if (session.mode === "awaiting_confirmation") {
     const yn = parseYesNo(body);
@@ -97,7 +112,7 @@ app.post("/twilio", async (req, res) => {
     if (yn === "yes") {
       const c = session.collected;
       twiml.message(
-        `Agendamento confirmado ✅\n• ${c.procedimento} — ${c.data} às ${c.horario}\nSe quiser, posso te passar endereço/orientações 🙂`,
+        `Agendamento confirmado ✅\n• ${c.procedimento} — ${c.data} às ${c.horario}\n${establishment.name}: se quiser, posso te passar endereço/orientações 🙂`,
       );
       resetSession(session);
       return res.type("text/xml").send(twiml.toString());
@@ -123,7 +138,7 @@ app.post("/twilio", async (req, res) => {
 
     const out = await askClinicBot({
       client,
-      clinic,
+      clinic: establishment,
       session,
       history: session.history,
       userText: body,
@@ -145,5 +160,5 @@ app.post("/twilio", async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () =>
-  console.log(`Webhook rodando em http://localhost:${PORT}`),
+  console.log(`Webhook rodando em http://localhost:${PORT} com ${establishments.length} estabelecimento(s)`),
 );

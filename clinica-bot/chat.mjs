@@ -1,5 +1,4 @@
 import "dotenv/config";
-import fs from "fs";
 import readline from "readline";
 import OpenAI from "openai";
 import {
@@ -8,13 +7,26 @@ import {
   enforceFlow,
   parseYesNo,
 } from "./src/core/bot-core.mjs";
+import {
+  findEstablishment,
+  loadEstablishments,
+} from "./src/core/establishments.mjs";
 
 if (!process.env.OPENAI_API_KEY)
   throw new Error("OPENAI_API_KEY não encontrada.");
 
-const clinic = JSON.parse(
-  fs.readFileSync(new URL("./clinica.json", import.meta.url), "utf8"),
-);
+const { establishments } = loadEstablishments();
+const selectedId = process.env.ESTABLISHMENT_ID;
+const establishment = findEstablishment({
+  establishments,
+  establishmentId: selectedId,
+});
+
+if (!establishment) {
+  throw new Error(
+    `ESTABLISHMENT_ID inválido. Opções: ${establishments.map((e) => e.id).join(", ")}`,
+  );
+}
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -35,7 +47,9 @@ function resetAppointmentState() {
   state.collected = emptyCollected();
 }
 
-console.log(`🤖 Bot da ${clinic.name} (ESTADO + JSON) — digite "sair"\n`);
+console.log(
+  `🤖 Bot de ${establishment.name} [${establishment.id}] (ESTADO + JSON) — digite "sair"\n`,
+);
 
 function loop() {
   rl.question("Você: ", async (text) => {
@@ -71,7 +85,7 @@ function loop() {
     try {
       const out = await askClinicBot({
         client,
-        clinic,
+        clinic: establishment,
         session: state,
         history,
         userText: trimmed,

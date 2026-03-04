@@ -1,16 +1,15 @@
-# AI Bot WhatsApp (Clínica)
+# AI Bot WhatsApp (Multi-estabelecimento)
 
-Projeto de **atendente virtual para WhatsApp** usando **Twilio + OpenAI + Node.js**.
-
-A proposta deste repositório é servir como um case de portfólio para automação de atendimento: responder dúvidas de clínica e conduzir o usuário até a confirmação de agendamento.
+Projeto de **atendente virtual para WhatsApp** usando **Twilio + OpenAI + Node.js**, com suporte a **múltiplos estabelecimentos** (clínicas, studios, consultórios etc.) no mesmo backend.
 
 ## ✨ Destaques
 
 - Atendimento conversacional em português com regras de negócio.
 - Coleta guiada de agendamento (procedimento → data → horário → nome → telefone).
 - Confirmação determinística (`sim/não`) antes de fechar o agendamento.
-- Webhook para Twilio (`POST /twilio`) e simulador em terminal.
+- Webhook para Twilio (`POST /twilio` e `POST /twilio/:establishmentId`) e simulador em terminal.
 - Prompt estruturado com saída em JSON Schema para maior previsibilidade.
+- Multi-tenant simples por estabelecimento, sem misturar sessão entre operações.
 
 ## 🧱 Estrutura do projeto
 
@@ -23,8 +22,12 @@ A proposta deste repositório é servir como um case de portfólio para automaç
 │   └── conversation-flow.md
 └── clinica-bot/
     ├── .env.example
+    ├── establishments.json
     ├── chat.mjs
-    ├── clinica.json
+    ├── clinica.json (fallback legado)
+    ├── src/core/
+    │   ├── bot-core.mjs
+    │   └── establishments.mjs
     ├── package.json
     └── server.mjs
 ```
@@ -58,6 +61,12 @@ Preencha o `.env` com sua chave e, em ambiente com Twilio real, com `TWILIO_AUTH
 npm run chat
 ```
 
+Opcionalmente selecione o estabelecimento no terminal:
+
+```bash
+ESTABLISHMENT_ID=studio-derma npm run chat
+```
+
 ### 4) Rodar servidor webhook
 
 ```bash
@@ -68,18 +77,19 @@ Servidor sobe em `http://localhost:3000` por padrão.
 
 ## 🔌 Endpoint
 
-- `GET /` → health check (`ok`)
-- `POST /twilio` → recebe payload do Twilio e responde TwiML
+- `GET /` → health check + resumo de estabelecimentos carregados
+- `POST /twilio` → resolve estabelecimento pelo número de destino (`To`) e responde TwiML
+- `POST /twilio/:establishmentId` → força um estabelecimento específico via rota
 
-Exemplo de campos esperados do Twilio:
+## 🏪 Como adicionar novo estabelecimento
 
-- `From`: identificador/telefone de origem
-- `Body`: texto enviado pelo usuário
-
+1. Edite `clinica-bot/establishments.json` e adicione novo objeto com `id`, `name`, `address`, `hours`, `services` e `policies`.
+2. (Recomendado) Defina `twilio_number` para roteamento automático por número de destino.
+3. Reinicie o servidor.
 
 ## 💼 Valor de negócio (story para cliente)
 
-Este bot foi pensado para resolver dores comuns de clínicas pequenas e médias:
+Este bot foi pensado para resolver dores comuns de negócios de atendimento:
 
 - **Resposta mais rápida** para dúvidas frequentes (horários, serviços, políticas).
 - **Triagem e pré-agendamento padronizados**, reduzindo retrabalho da equipe.
@@ -98,13 +108,6 @@ Este bot foi pensado para resolver dores comuns de clínicas pequenas e médias:
 - Arquitetura: [`docs/architecture.md`](docs/architecture.md)
 - Fluxo conversacional: [`docs/conversation-flow.md`](docs/conversation-flow.md)
 - API/Webhook: [`docs/api.md`](docs/api.md)
-
-## 🛣️ Roadmap curto
-
-- [ ] Validar assinatura do Twilio (`X-Twilio-Signature`).
-- [ ] Persistir sessão em Redis/DB (hoje está em memória).
-- [ ] Criar suíte de testes automatizados do fluxo de agendamento.
-- [ ] Adicionar logs estruturados com mascaramento de dados sensíveis.
 
 ## ⚠️ Limitações atuais
 
